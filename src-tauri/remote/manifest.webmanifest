@@ -1,0 +1,10 @@
+{
+  "name": "Hangar",
+  "short_name": "Hangar",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#161a2e",
+  "theme_color": "#161a2e",
+  "icons": [{ "src": "/icon.png", "sizes": "256x256", "type": "image/png" }]
+}

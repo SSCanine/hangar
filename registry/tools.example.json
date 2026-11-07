@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "themes": [
+    { "id": "ai", "name": "AI and models", "color": "#A99BFF", "icon": "ai" },
+    { "id": "image", "name": "Images", "color": "#7CC4FF", "icon": "image" },
+    { "id": "voice", "name": "Voice and audio", "color": "#6EE7A8", "icon": "voice" },
+    { "id": "utility", "name": "Utilities", "color": "#F2C66D", "icon": "utility" }
+  ],
+  "tools": [
+    {
+      "id": "ollama",
+      "name": "Ollama",
+      "theme": "ai",
+      "description": "Local models, OpenAI-compatible at /v1. The assistant dock talks to it.",
+      "kind": "service",
+      "url": "http://127.0.0.1:11434/",
+      "port": 11434,
+      "health": "/api/version",
+      "start": {
+        "cmd": ["%LOCALAPPDATA%\\Programs\\Ollama\\ollama app.exe"],
+        "cwd": "%LOCALAPPDATA%\\Programs\\Ollama",
+        "window": "minimized"
+      },
+      "stoppable": true,
+      "folder": "%LOCALAPPDATA%\\Programs\\Ollama",
+      "restart_stuck": true,
+      "notes": "Install from ollama.com. This start command is the default install location."
+    },
+    {
+      "id": "lmstudio",
+      "name": "LM Studio server",
+      "theme": "ai",
+      "description": "LM Studio's local server, OpenAI-compatible at /v1. Start it from LM Studio's Developer tab.",
+      "kind": "service",
+      "url": "http://127.0.0.1:1234/",
+      "port": 1234,
+      "health": "/v1/models",
+      "stoppable": false,
+      "notes": "Optional. Remove this entry if you don't use LM Studio."
+    },
+    {
+      "id": "hangar-stt",
+      "name": "Hangar speech-to-text",
+      "theme": "voice",
+      "description": "faster-whisper on the CPU for the assistant's mic. Never uses the GPU.",
+      "kind": "service",
+      "url": "http://127.0.0.1:3621/",
+      "port": 3621,
+      "health": "/health",
+      "start": {
+        "cmd": ["python", "stt_server.py"],
+        "cwd": "{hangar}\\stt",
+        "window": "hidden"
+      },
+      "stoppable": true,
+      "folder": "{hangar}\\stt",
+      "notes": "Needs: pip install faster-whisper fastapi uvicorn python-multipart. Started by the assistant on first mic use; the first transcription loads the model."
+    },
+    {
+      "id": "kokoro",
+      "name": "Kokoro voice",
+      "theme": "voice",
+      "description": "Read-aloud voices on the CPU (Kokoro-FastAPI, OpenAI speech API).",
+      "kind": "service",
+      "url": "http://127.0.0.1:8880/",
+      "port": 8880,
+      "health": "/v1/audio/voices",
+      "stoppable": false,
+      "notes": "Optional. Run Kokoro-FastAPI on port 8880 (its default), or set HANGAR_TTS_URL to another Kokoro-compatible server."
+    },
+    {
+      "id": "comfyui",
+      "name": "ComfyUI",
+      "theme": "image",
+      "description": "Node-based image and video generation.",
+      "kind": "web",
+      "url": "http://127.0.0.1:8188/",
+      "port": 8188,
+      "embed": true,
+      "gpu": true,
+      "start": {
+        "cmd": ["python", "main.py"],
+        "cwd": "%USERPROFILE%\\ComfyUI",
+        "window": "hidden"
+      },
+      "stoppable": true,
+      "folder": "%USERPROFILE%\\ComfyUI",
+      "notes": "Example. Point cwd and folder at your ComfyUI folder, and the first cmd entry at its Python."
+    }
+  ]
+}

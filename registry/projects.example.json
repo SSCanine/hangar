@@ -1,0 +1,10 @@
+{
+  "groups": [
+    {
+      "name": "Apps",
+      "items": [
+        { "name": "My app", "path": "D:\\Projects\\my-app", "url": "http://127.0.0.1:5173/", "description": "What it is, in a few words." }
+      ]
+    }
+  ]
+}

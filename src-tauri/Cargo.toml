@@ -1,0 +1,48 @@
+[package]
+name = "hangar"
+version = "0.1.0"
+license = "MIT"
+description = "Hangar: one front door for all your local tools"
+edition = "2021"
+
+[lib]
+name = "hangar_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+portable-pty = "0.9"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+tokio = { version = "1", features = ["net", "time", "sync", "macros", "rt-multi-thread"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "multipart", "rustls-tls"] }
+futures-util = "0.3"
+base64 = "0.22"
+trash = "5"
+tauri-plugin-single-instance = "2"
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio", "json", "query"] }
+sha2 = "0.10"
+getrandom = "0.3"
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+sysinfo = { version = "0.39", default-features = false, features = ["system", "disk", "network"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+  "Win32_Foundation",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_SystemInformation",
+  "Win32_System_Performance",
+  "Win32_System_Threading",
+  "Win32_UI_WindowsAndMessaging",
+] }
+# Same versions Tauri's WebView2 backend uses: real paths for files dropped on a chat.
+webview2-com = "0.39"
+windows-core = "0.62"
+
+[profile.release]
+codegen-units = 16

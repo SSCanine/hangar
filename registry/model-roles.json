@@ -1,0 +1,66 @@
+{
+  "_help": "Jobs for local models in Hangar's assistant (Ollama). Each job lists models best first; Hangar uses the first one that is installed. When a new model comes out: ollama pull it, then pick it for a job in the dock (gear icon) or put its name first in that job's list here. keep_alive = how long a model stays in the GPU after its last reply.",
+  "version": 1,
+  "keep_alive": "5m",
+  "unload_on_gpu_start": true,
+  "roles": [
+    {
+      "id": "quick",
+      "name": "Quick",
+      "use_for": "Everyday questions, summaries, lists, quick help. Knows your Hangar tools.",
+      "models": [
+        "qwen3:30b-a3b",
+        "qwen3:14b",
+        "qwen3:8b",
+        "llama3.1:8b"
+      ],
+      "temperature": 0.6,
+      "think": false,
+      "knows_hangar": true,
+      "prompt": ""
+    },
+    {
+      "id": "writer",
+      "name": "Writer",
+      "use_for": "Stories, captions, posts and rewrites.",
+      "models": [
+        "mistral-small3.2:24b",
+        "qwen3:14b",
+        "qwen3:8b",
+        "llama3.1:8b"
+      ],
+      "temperature": 0.9,
+      "think": false,
+      "knows_hangar": false,
+      "prompt": "You are a skilled creative writer. Write exactly what is asked, in vivid, concrete language. Match the requested tone and length."
+    },
+    {
+      "id": "coder",
+      "name": "Coder",
+      "use_for": "Code snippets, scripts, regex, explaining error messages.",
+      "models": [
+        "qwen2.5-coder:32b",
+        "qwen2.5-coder:14b",
+        "qwen2.5-coder:7b"
+      ],
+      "temperature": 0.2,
+      "think": false,
+      "knows_hangar": false,
+      "prompt": "You are a precise programming assistant. Give working code first, then a short explanation. Say so when you are not sure."
+    },
+    {
+      "id": "deep",
+      "name": "Deep think",
+      "use_for": "Hard problems, planning and comparisons. Thinks before answering, so it's slower.",
+      "models": [
+        "qwen3:30b-a3b",
+        "qwen3:14b",
+        "qwen3:8b"
+      ],
+      "temperature": 0.6,
+      "think": true,
+      "knows_hangar": false,
+      "prompt": "Work the problem through carefully, then give a clear, structured answer with your recommendation first."
+    }
+  ]
+}

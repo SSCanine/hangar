@@ -1,0 +1,18 @@
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/schemas/*.json
+!src-tauri/gen/schemas/capabilities.json
+*.log
+nul
+__pycache__/
+.pytest_cache/
+.playwright-mcp/
+
+# Your own lists: Hangar copies tools.json from tools.example.json on first run.
+registry/tools.json
+registry/projects.json
+
+# Mobile icon sets from `tauri icon`; Hangar is desktop only.
+src-tauri/icons/android/
+src-tauri/icons/ios/
