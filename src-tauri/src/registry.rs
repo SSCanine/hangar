@@ -124,15 +124,39 @@ pub struct RegistryPayload {
     pub registry: Registry,
 }
 
-/// The folder holding tools.json, model-roles.json and the optional projects.json.
-/// HANGAR_REGISTRY (a tools.json path) overrides it; otherwise it is the repo's registry folder.
-pub fn registry_dir() -> PathBuf {
-    if let Ok(p) = std::env::var("HANGAR_REGISTRY") {
-        if let Some(dir) = PathBuf::from(p).parent() {
-            return dir.to_path_buf();
+/// The example lists, built into the exe so a copy of Hangar away from its repo still starts.
+const TOOLS_EXAMPLE: &str = include_str!("../../registry/tools.example.json");
+const ROLES_EXAMPLE: &str = include_str!("../../registry/model-roles.example.json");
+
+/// The Hangar folder, found at run time (not baked in at build time):
+/// 1. HANGAR_HOME, when set;
+/// 2. the repo the exe sits in (src-tauri\target\release\hangar.exe -> the repo), found by walking up
+///    from the exe to a folder that has registry\tools.example.json, so a moved or renamed clone works;
+/// 3. otherwise `%APPDATA%\app.hangar.desktop`, with its own registry folder (an exe copied elsewhere).
+pub fn hangar_home() -> PathBuf {
+    static HOME: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    HOME.get_or_init(|| {
+        if let Ok(h) = std::env::var("HANGAR_HOME") {
+            if !h.trim().is_empty() {
+                return PathBuf::from(h);
+            }
         }
-    }
-    PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../registry"))
+        if let Ok(exe) = std::env::current_exe() {
+            for dir in exe.ancestors().skip(1).take(6) {
+                if dir.join("registry").join("tools.example.json").is_file() {
+                    return dir.to_path_buf();
+                }
+            }
+        }
+        PathBuf::from(std::env::var("APPDATA").unwrap_or_else(|_| ".".into())).join("app.hangar.desktop")
+    })
+    .clone()
+}
+
+/// The folder holding tools.json, model-roles.json and the optional projects.json.
+/// HANGAR_REGISTRY (a tools.json path) overrides where tools.json lives; the other files stay here.
+pub fn registry_dir() -> PathBuf {
+    hangar_home().join("registry")
 }
 
 pub fn registry_path() -> PathBuf {
@@ -142,25 +166,32 @@ pub fn registry_path() -> PathBuf {
     registry_dir().join("tools.json")
 }
 
-/// Your own tools.json is never committed. On first run it starts as a copy of
-/// tools.example.json, which you (or your Claude) then edit.
-fn ensure_from_example(path: &std::path::Path) {
+/// Your own lists are never committed. On first run each starts as a copy of its example
+/// (the file next to it, or the copy built into the exe), which you or your Claude then edit.
+pub fn ensure_from_example(path: &std::path::Path, example_name: &str) {
     if path.exists() {
         return;
     }
-    let example = path.with_file_name("tools.example.json");
-    if example.is_file() {
-        // Copied aside and renamed into place, so a reader never sees half a file.
-        let tmp = path.with_extension(format!("json.{}.tmp", std::process::id()));
-        if std::fs::copy(&example, &tmp).is_ok() && std::fs::rename(&tmp, path).is_err() {
-            let _ = std::fs::remove_file(&tmp);
-        }
+    let example = path.with_file_name(example_name);
+    let text = match std::fs::read_to_string(&example) {
+        Ok(t) => t,
+        Err(_) if example_name == "tools.example.json" => TOOLS_EXAMPLE.to_string(),
+        Err(_) if example_name == "model-roles.example.json" => ROLES_EXAMPLE.to_string(),
+        Err(_) => return,
+    };
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    // Written aside and renamed into place, so a reader never sees half a file.
+    let tmp = path.with_extension(format!("json.{}.tmp", std::process::id()));
+    if std::fs::write(&tmp, text).is_ok() && std::fs::rename(&tmp, path).is_err() {
+        let _ = std::fs::remove_file(&tmp);
     }
 }
 
 pub fn load() -> Result<Registry, String> {
     let path = registry_path();
-    ensure_from_example(&path);
+    ensure_from_example(&path, "tools.example.json");
     load_from(&path)
 }
 
@@ -168,18 +199,11 @@ pub fn load_from(path: &std::path::Path) -> Result<Registry, String> {
     let text = std::fs::read_to_string(path)
         .map_err(|e| format!("Couldn't read the tool list at {}: {e}", path.display()))?;
     let mut reg: Registry = serde_json::from_str(&text).map_err(|e| format!("The tool list has a JSON error: {e}"))?;
-    let root = hangar_root();
+    let root = hangar_home().display().to_string();
     for t in &mut reg.tools {
         expand_tool(t, &root);
     }
     Ok(reg)
-}
-
-/// The Hangar folder (the repo root), for `{hangar}` in paths.
-pub fn hangar_root() -> String {
-    let p = PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/.."));
-    let p = std::fs::canonicalize(&p).unwrap_or(p);
-    p.display().to_string().trim_start_matches(r"\\?\").to_string()
 }
 
 /// `%NAME%` becomes that environment variable (left as is when it isn't set) and `{hangar}`
@@ -380,6 +404,12 @@ mod tests {
         assert_eq!(expand("%NOT_SET_HANGAR_XYZ%/b", "R"), "%NOT_SET_HANGAR_XYZ%/b");
         assert_eq!(expand("100% sure", "R"), "100% sure");
         assert_eq!(expand("%%", "R"), "%%");
+    }
+
+    #[test]
+    fn finds_its_own_folder_at_run_time() {
+        // The test exe lives under src-tauri/target, inside the repo: walking up finds it.
+        assert!(hangar_home().join("registry").join("tools.example.json").is_file());
     }
 
     fn reg_of(links: &[(&str, Option<&str>)]) -> Registry {

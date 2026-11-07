@@ -1,4 +1,4 @@
-"""Synthesizes Hangar's notification chimes into public/sounds/<style>-<kind>.wav.
+"""Synthesizes Hangar's notification chimes into public/sounds/<style>-<kind>.wav. Needs numpy.
 
 kinds:  done     a reply or task finished (rising, bright)
         waiting  Claude is waiting for you (lower, repeated)

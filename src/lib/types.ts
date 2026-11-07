@@ -146,7 +146,6 @@ export type View =
   | { type: "chats" }
   | { type: "settings" };
 
-/** A Claude Code session from `claude agents --json --all`. */
 /** One line of a Claude Code transcript: what you typed, Claude's reply, or a tool it ran. */
 export interface ClaudeMessage {
   role: "user" | "assistant" | "tool";
@@ -185,6 +184,7 @@ export interface ClaudeChatRef {
   updated: number;
 }
 
+/** A Claude Code session from `claude agents --json --all`. */
 export interface ChatSession {
   id: string;
   session_id: string;
@@ -202,7 +202,6 @@ export interface ChatSession {
   running: boolean;
 }
 
-/** Phone access: a hidden `claude remote-control` server Hangar switches on and off. */
 /** Hangar Remote: the phone page Hangar serves on the home network. */
 export interface RemoteDevice {
   id: string;
@@ -232,6 +231,7 @@ export interface RemoteStatus {
   pairing: RemotePairing | null;
 }
 
+/** Phone access: a hidden `claude remote-control` server Hangar switches on and off. */
 export interface PhoneStatus {
   running: boolean;
   pid: number;

@@ -142,7 +142,7 @@ export function ToolEditor() {
             <div className="grid grid-cols-[1fr_110px] gap-3">
               <div>
                 <label className={label}>Address</label>
-                <input className={field} placeholder="http://127.0.0.1:3620/" value={t.url ?? ""} onChange={(e) => up({ url: e.target.value })} />
+                <input className={field} placeholder="http://127.0.0.1:8080/" value={t.url ?? ""} onChange={(e) => up({ url: e.target.value })} />
               </div>
               <div>
                 <label className={label}>Port</label>

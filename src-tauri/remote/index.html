@@ -455,7 +455,7 @@ async function doPair(code) {
   if (code.length !== 6) return showPair("The code has 6 digits.");
   $("#pairBtn").disabled = true;
   try {
-    const name = (/iPhone/.test(navigator.userAgent) ? "iPhone" : /iPad/.test(navigator.userAgent) ? "iPad" : "Phone") + (standalone ? " (Home Screen)" : " (Safari)");
+    const name = (/iPhone/.test(navigator.userAgent) ? "iPhone" : /iPad/.test(navigator.userAgent) ? "iPad" : /Android/.test(navigator.userAgent) ? "Android phone" : "Phone") + (standalone ? " (Home Screen)" : " (browser)");
     const r = await fetch("/api/pair", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, name }) });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(data.error || "Pairing failed");

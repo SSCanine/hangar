@@ -39,11 +39,59 @@ pub struct ChatSession {
     running: bool,
 }
 
+/// The Claude Code program. Hangar needs `claude.exe` on PATH (Claude Code's native installer);
+/// an npm install's `claude.cmd` can't be started directly.
 pub(crate) fn claude_cmd() -> Command {
     let mut c = Command::new("claude");
     #[cfg(windows)]
     c.creation_flags(CREATE_NO_WINDOW);
     c
+}
+
+/// How chats Hangar starts treat Claude's permission prompts. "default" = Claude Code's normal
+/// prompts (answer them in the chat's Terminal); "acceptEdits" and "bypassPermissions" are opt-in
+/// from Settings. Kept in the app data folder so the phone page uses the same choice.
+const MODES: [&str; 3] = ["default", "acceptEdits", "bypassPermissions"];
+
+fn mode_file() -> PathBuf {
+    PathBuf::from(std::env::var("APPDATA").unwrap_or_default()).join("app.hangar.desktop").join("chat-settings.json")
+}
+
+pub fn permission_mode() -> String {
+    std::fs::read_to_string(mode_file())
+        .ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .and_then(|v| v["permission_mode"].as_str().map(String::from))
+        .filter(|m| MODES.contains(&m.as_str()))
+        .unwrap_or_else(|| "default".into())
+}
+
+/// The `--permission-mode` flags for a new chat (none for Claude's default).
+fn mode_flags() -> Vec<String> {
+    let m = permission_mode();
+    if m == "default" {
+        vec![]
+    } else {
+        vec!["--permission-mode".into(), m]
+    }
+}
+
+#[tauri::command]
+pub fn chat_mode_get() -> String {
+    permission_mode()
+}
+
+#[tauri::command]
+pub fn chat_mode_set(mode: String) -> Result<String, String> {
+    if !MODES.contains(&mode.as_str()) {
+        return Err(format!("Unknown permission mode: {mode}"));
+    }
+    let f = mode_file();
+    if let Some(dir) = f.parent() {
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    }
+    std::fs::write(&f, serde_json::to_string(&serde_json::json!({ "permission_mode": mode })).unwrap_or_default()).map_err(|e| e.to_string())?;
+    Ok(mode)
 }
 
 fn jobs_dir() -> PathBuf {
@@ -138,7 +186,7 @@ pub(crate) fn agents_json(all: bool) -> Result<Vec<Value>, String> {
     if all {
         c.arg("--all");
     }
-    let out = c.output().map_err(|e| format!("Couldn't run claude: {e}"))?;
+    let out = c.output().map_err(|e| format!("Couldn't run claude ({e}). Hangar needs Claude Code installed with its native installer, so claude.exe is on PATH."))?;
     let v: Value = serde_json::from_slice(&out.stdout)
         .map_err(|_| format!("claude agents gave no list: {}", String::from_utf8_lossy(&out.stderr).chars().take(200).collect::<String>()))?;
     Ok(v.as_array().cloned().unwrap_or_default())
@@ -293,14 +341,14 @@ pub async fn chats_new(cwd: String, name: String, prompt: String) -> Result<Stri
     tauri::async_runtime::spawn_blocking(move || {
         let dir = if std::path::Path::new(&cwd).is_dir() { cwd } else { std::env::var("USERPROFILE").unwrap_or_else(|_| ".".into()) };
         let mut c = claude_cmd();
-        c.current_dir(&dir).args(["--bg", "--permission-mode", "bypassPermissions"]);
+        c.current_dir(&dir).arg("--bg").args(mode_flags());
         if !name.trim().is_empty() {
             c.args(["-n", name.trim()]);
         }
         if !prompt.trim().is_empty() {
             c.arg(prompt.trim());
         }
-        let out = c.output().map_err(|e| format!("Couldn't run claude: {e}"))?;
+        let out = c.output().map_err(|e| format!("Couldn't run claude ({e}). Hangar needs Claude Code installed with its native installer, so claude.exe is on PATH."))?;
         let text = String::from_utf8_lossy(&out.stdout).to_string();
         if !out.status.success() {
             return Err(String::from_utf8_lossy(&out.stderr).trim().chars().take(300).collect());
@@ -355,7 +403,7 @@ pub fn send_blocking(id: &str, session_id: &str, cwd: &str, name: &str, text: &s
     if !name.trim().is_empty() {
         c.args(["-n", name.trim()]);
     }
-    let out = c.arg(text).output().map_err(|e| format!("Couldn't run claude: {e}"))?;
+    let out = c.arg(text).output().map_err(|e| format!("Couldn't run claude ({e}). Hangar needs Claude Code installed with its native installer, so claude.exe is on PATH."))?;
     let printed = String::from_utf8_lossy(&out.stdout).to_string();
     if !out.status.success() {
         return Err(String::from_utf8_lossy(&out.stderr).trim().chars().take(300).collect());
@@ -384,14 +432,14 @@ pub fn send_blocking(id: &str, session_id: &str, cwd: &str, name: &str, text: &s
 }
 
 /// The job's own launch flags (agent, model, permission mode) from state.json, so a chat
-/// continued as a new session runs the way it did. Defaults to bypassPermissions, as Hangar starts chats.
+/// continued as a new session runs the way it did. Without them: the permission mode set in Settings.
 fn resume_flags(job: Option<&Value>) -> Vec<String> {
     let flags: Vec<String> = job
         .and_then(|j| j["respawnFlags"].as_array())
         .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
         .unwrap_or_default();
     if flags.is_empty() {
-        vec!["--permission-mode".into(), "bypassPermissions".into()]
+        mode_flags()
     } else {
         flags
     }
@@ -636,8 +684,9 @@ mod tests {
         assert!(!cant_start("Session 136a569c ready"));
         let job = json!({"respawnFlags": ["--agent", "claude", "--permission-mode", "bypassPermissions", "--model", "opus"]});
         assert_eq!(resume_flags(Some(&job)), ["--agent", "claude", "--permission-mode", "bypassPermissions", "--model", "opus"]);
-        assert_eq!(resume_flags(Some(&json!({}))), ["--permission-mode", "bypassPermissions"]);
-        assert_eq!(resume_flags(None), ["--permission-mode", "bypassPermissions"]);
+        assert_eq!(resume_flags(Some(&json!({}))), mode_flags());
+        assert_eq!(resume_flags(None), mode_flags());
+        assert!(MODES.contains(&permission_mode().as_str()));
     }
 
     /// Live tests run real Claude sessions in this folder: HANGAR_LIVE_DIR, else a temp folder.

@@ -97,6 +97,8 @@ pub fn run() {
             attach::attach_save,
             chats::chats_open_external,
             chats::chats_done,
+            chats::chat_mode_get,
+            chats::chat_mode_set,
             closeout::chats_procs,
             closeout::chats_close,
             sessions::session_path,

@@ -1,7 +1,7 @@
 import clsx from "clsx";
-import { Bell, CheckCircle2, Play, Volume2, XCircle } from "lucide-react";
+import { Bell, CheckCircle2, MessagesSquare, Play, Volume2, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { api } from "../lib/api";
+import { api, errText, type ChatMode } from "../lib/api";
 import { ensureRunning } from "../lib/actions";
 import { RemoteCard } from "../components/RemoteCard";
 import { playChime, speak } from "../lib/speech";
@@ -18,6 +18,12 @@ const READ_MODES = [
   { id: "full", name: "Full reply", hint: "every word Claude wrote" },
   { id: "brief", name: "Brief", hint: "a few sentences: what happened and what you need to do" },
 ] as const;
+
+const CHAT_MODES: { id: ChatMode; name: string; hint: string }[] = [
+  { id: "default", name: "Ask me", hint: "Claude asks before edits and commands; answer in the chat's Terminal (recommended)" },
+  { id: "acceptEdits", name: "Allow edits", hint: "file edits go ahead; commands still ask" },
+  { id: "bypassPermissions", name: "Never ask", hint: "everything runs without asking (risky)" },
+];
 
 // Kokoro voice ids start with accent + gender: af = American woman, bm = British man, ...
 const GROUPS: Record<string, string> = { af: "American, female", am: "American, male", bf: "British, female", bm: "British, male" };
@@ -74,8 +80,12 @@ export function SettingsView() {
 
   // The hook reads these from notify.json.
   useEffect(() => {
-    void api.notifySettings({ chime: s.chime, chime_waiting: s.chimeWaiting, style: s.chimeStyle });
-  }, [s.chime, s.chimeWaiting, s.chimeStyle]);
+    void api.notifySettings({ chime: s.chime, chime_waiting: s.chimeWaiting, style: s.chimeStyle, toast: s.popups });
+  }, [s.chime, s.chimeWaiting, s.chimeStyle, s.popups]);
+
+  const [mode, setMode] = useState<ChatMode | null>(null);
+  useEffect(() => void api.chatModeGet().then(setMode).catch(() => setMode("default")), []);
+  const pickMode = (m: ChatMode) => api.chatModeSet(m).then(setMode).catch((e) => s.toast(errText(e), "bad"));
 
   const english = voices.filter((v) => GROUPS[v.slice(0, 2)]);
   const list = english.length ? english : KOKORO_VOICES.map((v) => v.id);
@@ -87,9 +97,35 @@ export function SettingsView() {
         <h1 className="text-[34px] leading-none font-semibold tracking-[-0.02em] mb-2" style={{ fontVariationSettings: '"wdth" 90' }}>
           Settings
         </h1>
-        <p className="text-dim mb-8">Chimes, the voice that reads replies to you, and your phone. Changes save right away.</p>
+        <p className="text-dim mb-8">Your phone, Claude chats, chimes and the voice that reads replies to you. Changes save right away.</p>
 
         <RemoteCard />
+
+        <Card icon={<MessagesSquare size={18} className="text-gold" />} title="Claude chats">
+          <p className="text-[13px] text-dim mb-3">
+            How chats that Hangar starts (from the Chats page or the phone) handle Claude's permission prompts. Chats you start yourself in a terminal or VS Code are not affected.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {CHAT_MODES.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => void pickMode(m.id)}
+                className={clsx(
+                  "rounded-xl border px-3 py-2.5 text-left transition-colors",
+                  mode === m.id ? (m.id === "bypassPermissions" ? "border-bad bg-bad/10" : "border-gold bg-gold/10") : "border-line hover:border-faint",
+                )}
+              >
+                <div className="text-[14px] font-medium">{m.name}</div>
+                <div className="text-[12px] text-dim">{m.hint}</div>
+              </button>
+            ))}
+          </div>
+          {mode === "bypassPermissions" && (
+            <p className="text-[12.5px] text-bad mt-2">
+              Claude can edit and delete files and run any command in that folder without asking, and so can anyone with a paired phone. Only use this in folders you can afford to lose.
+            </p>
+          )}
+        </Card>
 
         <Card icon={<Bell size={18} className="text-gold" />} title="Chimes">
           <Toggle on={s.chime} onChange={(v) => set({ chime: v })} label="Chime when Claude finishes" hint="Every Claude Code session (VS Code and background jobs) and Hangar's assistant." />
@@ -197,7 +233,7 @@ export function SettingsView() {
               ))}
             </div>
             <p className="text-[12px] text-faint mt-1.5">
-              Used by the play button under the bell, auto-read and the notification's Read aloud. Briefs come from Claude Haiku through the Claude bridge; with the bridge off, Hangar cuts a short version from the reply itself.
+              Used by the play button under the bell, auto-read and the notification's Read aloud. Briefs come from your local model (the Quick job in Ollama); with none running, Hangar cuts a short version from the reply itself.
             </p>
           </div>
           <div className="mt-2">

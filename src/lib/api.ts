@@ -34,7 +34,7 @@ export interface ChatEvent {
 const mock = {
   running: new Set<string>(),
   async registry(): Promise<RegistryPayload> {
-    const res = await fetch("/registry/tools.json").catch(() => null);
+    const res = await fetch("/registry/tools.example.json").catch(() => null);
     const registry = res && res.ok ? await res.json() : { version: 1, themes: [], tools: [] };
     return { path: "registry/tools.json (preview)", registry };
   },
@@ -132,6 +132,9 @@ export const api = {
     inTauri ? invoke("chats_close", { id, sessionId, cwd, name, keep, archive }) : Promise.resolve({ ended: true, killed: [], left: [], archived: "" }),
   /** The conversation's transcript file ("" when not found). */
   sessionPath: (sessionId: string, cwd: string): Promise<string> => (inTauri ? invoke("session_path", { sessionId, cwd }) : Promise.resolve("")),
+  /** How chats Hangar starts handle Claude's permission prompts. */
+  chatModeGet: (): Promise<ChatMode> => (inTauri ? invoke("chat_mode_get") : Promise.resolve("default")),
+  chatModeSet: (mode: ChatMode): Promise<ChatMode> => (inTauri ? invoke("chat_mode_set", { mode }) : Promise.resolve(mode)),
   chatsDone: (id: string, sessionId: string, cwd: string, name: string): Promise<string> =>
     inTauri ? invoke("chats_done", { id, sessionId, cwd, name }) : Promise.resolve(""),
   phoneStatus: (): Promise<PhoneStatus> =>
@@ -163,7 +166,7 @@ export const api = {
   roles: (): Promise<{ path: string; config: RolesConfig }> =>
     inTauri
       ? invoke("roles_get")
-      : fetch("/registry/model-roles.json").then(async (r) => ({ path: "registry/model-roles.json (preview)", config: (await r.json()) as RolesConfig })),
+      : fetch("/registry/model-roles.example.json").then(async (r) => ({ path: "registry/model-roles.json (preview)", config: (await r.json()) as RolesConfig })),
   saveRoles: (config: RolesConfig): Promise<void> => (inTauri ? invoke("roles_save", { config }) : Promise.resolve()),
   openRoles: (): Promise<void> => (inTauri ? invoke("roles_open") : Promise.resolve()),
   ollamaLoaded: (host: string): Promise<LoadedModel[]> => (inTauri ? invoke("ollama_loaded", { host }) : Promise.resolve([])),
@@ -179,6 +182,8 @@ export const api = {
   stt: (endpoint: string, audioB64: string, mime: string): Promise<string> =>
     invoke("stt", { endpoint, audioB64, mime }),
 };
+
+export type ChatMode = "default" | "acceptEdits" | "bypassPermissions";
 
 export interface InboxItem {
   id: string;

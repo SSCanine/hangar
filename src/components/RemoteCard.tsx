@@ -94,7 +94,7 @@ export function RemoteCard() {
             <div className="flex gap-5 items-center rounded-xl bg-night border border-line p-4">
               <div className="w-[150px] h-[150px] rounded-lg overflow-hidden bg-white shrink-0 [&>svg]:w-full [&>svg]:h-full" dangerouslySetInnerHTML={{ __html: st.pairing.qr }} />
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] text-dim">Scan with the iPhone camera, or type this code on the phone:</div>
+                <div className="text-[13px] text-dim">Scan with the phone's camera, or type this code on the phone:</div>
                 <div className="font-mono text-[34px] tracking-[0.25em] text-gold my-1">{st.pairing.code}</div>
                 <div className="text-[12.5px] text-faint">
                   Works for {left} more min, on several devices. Safari and a Home Screen icon each pair once.

@@ -16,6 +16,7 @@ pub fn roles_path() -> PathBuf {
 
 fn load() -> Result<Value, String> {
     let path = roles_path();
+    crate::registry::ensure_from_example(&path, "model-roles.example.json");
     let text = std::fs::read_to_string(&path)
         .map_err(|e| format!("Couldn't read the model jobs at {}: {e}", path.display()))?;
     serde_json::from_str(&text).map_err(|e| format!("The model jobs file has a JSON error: {e}"))
@@ -124,7 +125,8 @@ mod tests {
 
     #[test]
     fn roles_file_parses_and_ids_are_unique() {
-        let v = load().expect("registry/model-roles.json must parse");
+        let text = std::fs::read_to_string(crate::registry::registry_dir().join("model-roles.example.json")).expect("example file");
+        let v: Value = serde_json::from_str(&text).expect("registry/model-roles.example.json must parse");
         let roles = v["roles"].as_array().expect("roles list");
         let mut ids: Vec<&str> = roles.iter().map(|r| r["id"].as_str().expect("id")).collect();
         assert!(roles.iter().all(|r| r["models"].as_array().is_some_and(|m| !m.is_empty())));

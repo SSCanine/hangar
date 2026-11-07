@@ -445,11 +445,13 @@ Second line"));
 
     #[test]
     fn finds_a_real_transcript() {
-        let dir = projects_dir().join("H--Claude");
-        let Some(any) = std::fs::read_dir(&dir).ok().and_then(|mut r| r.find_map(|e| {
-            let p = e.ok()?.path();
-            (p.extension()? == "jsonl").then_some(p)
-        })) else { return };
+        // Any transcript on this PC; skipped on a machine without Claude Code history.
+        let Some(any) = std::fs::read_dir(projects_dir()).ok().and_then(|dirs| {
+            dirs.filter_map(|d| std::fs::read_dir(d.ok()?.path()).ok()).flatten().find_map(|e| {
+                let p = e.ok()?.path();
+                (p.extension()? == "jsonl").then_some(p)
+            })
+        }) else { return };
         let id = any.file_stem().unwrap().to_string_lossy().to_string();
         assert_eq!(find_transcript(&id, r"D:\Projects").as_deref(), Some(any.as_path()));
         assert_eq!(find_transcript(&id, "").as_deref(), Some(any.as_path()));

@@ -122,7 +122,7 @@ fn start_blocking(path: &Path, cwd: &str) -> Result<Phone, String> {
         .stderr(Stdio::piped());
     #[cfg(windows)]
     c.creation_flags(CREATE_NO_WINDOW);
-    let mut child = c.spawn().map_err(|e| format!("Couldn't run claude: {e}"))?;
+    let mut child = c.spawn().map_err(|e| format!("Couldn't run claude ({e}). Hangar needs Claude Code installed with its native installer, so claude.exe is on PATH."))?;
     let rec = Phone { running: true, pid: child.id(), cwd: cwd.to_string(), started: now_ms(), url: String::new() };
     save(path, &rec);
 
@@ -222,10 +222,10 @@ mod tests {
 
     #[test]
     fn reads_the_link_through_terminal_codes() {
-        let raw = "\x1b[1A\x1b[J· Connected · Claude · HEAD\n    \x1b]8;;https://claude.ai/code/session_01M?from=cli\x07Hangar\x1b]8;;\x07\n\nContinue coding in the Claude mobile app or https://claude.ai/code?environment=env_014ox\nspace to show QR code";
+        let raw = "\x1b[1A\x1b[J· Connected · Claude · HEAD\n    \x1b]8;;https://claude.ai/code/session_01EXAMPLE?from=cli\x07Hangar\x1b]8;;\x07\n\nContinue coding in the Claude mobile app or https://claude.ai/code?environment=env_01EXAMPLE\nspace to show QR code";
         let clean = strip_ansi(raw);
         assert!(clean.contains("Connected") && clean.contains("    Hangar\n") && !clean.contains('\x1b'));
-        assert_eq!(find_url(&clean).as_deref(), Some("https://claude.ai/code?environment=env_014ox"));
+        assert_eq!(find_url(&clean).as_deref(), Some("https://claude.ai/code?environment=env_01EXAMPLE"));
         assert_eq!(find_url("Connecting"), None);
     }
 

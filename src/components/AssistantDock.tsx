@@ -99,8 +99,10 @@ function Bubble({ m, id }: { m: ChatMessage; id: string }) {
 export function AssistantDock() {
   const s = useStore();
   const { endpoint, models, conversations, activeConv, set, upsertConv, deleteConv, ttsProvider, ttsVoice, autoSpeak, toast, roles } = s;
-  const ep = ENDPOINTS.find((e) => e.id === endpoint) ?? ENDPOINTS[0];
-  const epTool = ep.toolId ? toolById(s, ep.toolId) : undefined;
+  const epDefault = ENDPOINTS.find((e) => e.id === endpoint) ?? ENDPOINTS[0];
+  const epTool = epDefault.toolId ? toolById(s, epDefault.toolId) : undefined;
+  // A matching tool in your list sets the address (its url + /v1); else the app's default port.
+  const ep = epTool?.url ? { ...epDefault, base: epTool.url.replace(/\/+$/, "") + "/v1" } : epDefault;
   const [available, setAvailable] = useState<string[] | null>(null);
   const [offline, setOffline] = useState(false);
   const [draft, setDraft] = useState("");

@@ -1,7 +1,7 @@
 """Claude Code hook: chime + Hangar inbox.
 
 Runs on Stop (a reply or task finished) and Notification (Claude is waiting for you).
-1. Plays a soft chime (sounds/done.wav or sounds/waiting.wav), unless muted in Hangar.
+1. Plays a soft chime (public/sounds/<style>-done.wav or -waiting.wav), unless muted in Hangar.
 2. Appends the event with the full reply to Hangar's inbox
    (%APPDATA%/app.hangar.desktop/inbox.jsonl), where the bell shows it with a play button.
 

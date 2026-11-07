@@ -1,12 +1,12 @@
 import {
-  ArrowLeftRight, AudioLines, Bot, Brush, Clapperboard, Coins, Disc3, Gamepad2, GraduationCap, Image,
-  Megaphone, MonitorPlay, Sparkles, Wrench, type LucideIcon,
+  AudioLines, Bot, Brush, Clapperboard, Code2, Coins, Gamepad2, GraduationCap, Image,
+  Megaphone, Music, Sparkles, Wrench, type LucideIcon,
 } from "lucide-react";
 
 const ICONS: Record<string, LucideIcon> = {
-  vj: MonitorPlay,
-  dj: Disc3,
   content: Megaphone,
+  music: Music,
+  code: Code2,
   image: Image,
   video: Clapperboard,
   voice: AudioLines,
@@ -15,7 +15,6 @@ const ICONS: Record<string, LucideIcon> = {
   games: Gamepad2,
   utility: Wrench,
   school: GraduationCap,
-  cross: ArrowLeftRight,
   art: Brush,
   sparkles: Sparkles,
 };

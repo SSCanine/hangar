@@ -112,7 +112,7 @@ interface PathOwner {
 }
 
 // Shared install folders say nothing about which tool a process belongs to.
-const SHARED_ROOT = /^[a-z]:\\(program files( \(x86\))?|windows|programdata)(\\|$)|\\appdata\\|\\anaconda3(\\|$)/;
+const SHARED_ROOT = /^[a-z]:\\(program files( \(x86\))?|windows|programdata)(\\|$)|\\appdata\\|\\(anaconda3|miniconda3|miniforge3|mambaforge|python3\d*)(\\|$)/;
 // Pure launch wrappers an app uses to spawn helpers (MCP servers via cmd /c npx ...): look through them.
 const WRAPPER_RE = /^(cmd|conhost|npm|npx|uv|uvx)\.exe$/i;
 // Interpreters, shells and the desktop: whatever they start is someone's script, not an app's helper.

@@ -143,6 +143,8 @@ export async function ensureRunning(id: string, ms = 90_000): Promise<boolean> {
   const t = toolById(st(), id);
   if (!t) return false;
   if (isRunning(id)) return true;
+  // Nothing Hangar can start (e.g. a server you run yourself): say no quietly, no error toast.
+  if (!t.start && !t.exe) return false;
   if (!(await startTool(t))) return false;
   return waitUntilUp(id, ms);
 }

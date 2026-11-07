@@ -39,6 +39,18 @@
       "notes": "Optional. Remove this entry if you don't use LM Studio."
     },
     {
+      "id": "koboldcpp",
+      "name": "koboldcpp",
+      "theme": "ai",
+      "description": "Run GGUF models, OpenAI-compatible at /v1.",
+      "kind": "web",
+      "url": "http://127.0.0.1:5001/",
+      "port": 5001,
+      "health": "/v1/models",
+      "stoppable": true,
+      "notes": "Optional. Add a start command pointing at your koboldcpp.exe and model, or remove this entry."
+    },
+    {
       "id": "hangar-stt",
       "name": "Hangar speech-to-text",
       "theme": "voice",

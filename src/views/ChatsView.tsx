@@ -63,7 +63,7 @@ function ago(ms: number): string {
  * knows reopen with attach (same session); older ones resume as a copy. */
 function launch(c: ChatSession): { args: string[]; note?: string } {
   if (c.kind === "background" && c.state !== ARCHIVED) return { args: ["attach", c.id] };
-  if (!c.running && c.session_id) return { args: ["--resume", c.session_id, "--permission-mode", "bypassPermissions"] };
+  if (!c.running && c.session_id) return { args: ["--resume", c.session_id] };
   return { args: [], note: "This session runs in its own terminal or VS Code window, so Hangar can't attach to it. Switch to that window, or stop it there." };
 }
 
